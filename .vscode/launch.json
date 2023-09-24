@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch CodeLLDB",
+            "type": "codelldb",
+            "request": "launch",
+            "args": [
+                "127.0.0.1",
+                "51511"
+            ],
+            "preLaunchTask": "Make",
+            "expressions": "native",
+            "program": "${workspaceFolder}/${fileBasenameNoExtension}"
+        }
+    ]
+}
