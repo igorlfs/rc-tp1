@@ -146,6 +146,7 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in client_addr;
   socklen_t client_addr_len = sizeof(client_addr);
 
+reconnect:
   if (listen(server_socket, MAX_PENDING) == -1) {
     exit(EXIT_FAILURE);
   }
@@ -180,10 +181,17 @@ int main(int argc, char *argv[]) {
     case RESET:
       start_action(&action);
       break;
+    case EXIT:
+      printf("client disconnected\n");
     }
 
     if (send(client_socket, &action, sizeof(Action), 0) == -1) {
       exit(EXIT_FAILURE);
+    }
+
+    if (action.type == EXIT) {
+      close(client_socket);
+      goto reconnect;
     }
   }
 

@@ -14,7 +14,7 @@
 
 #define MAX_CMD_SIZE 100
 
-bool is_game_over = false;
+bool is_connected = true;
 
 bool handle_out_of_bounds(int *row, int *col) {
   *row = atoi(strtok(NULL, ","));
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  while (!is_game_over) {
+  while (is_connected) {
     Action action;
     char buffer[MAX_CMD_SIZE];
 
@@ -101,6 +101,9 @@ int main(int argc, char *argv[]) {
     } else if (strcmp(command, "reset") == 0) {
       action.type = RESET;
       printf("starting new game\n");
+    } else if (strcmp(command, "exit") == 0) {
+      action.type = EXIT;
+      is_connected = false;
     }
     if (send(client_socket, &action, sizeof(Action), 0) == -1) {
       exit(EXIT_FAILURE);
@@ -110,14 +113,16 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
     if (action.type == WIN) {
-      is_game_over = true;
+      is_connected = false;
       printf("YOU WIN!\n");
     } else if (action.board[action.coordinates[0]][action.coordinates[1]] ==
                BOMB_CELL) {
-      is_game_over = true;
+      is_connected = false;
       printf("GAME OVER!\n");
     }
-    print_board(action.board);
+    if (action.type != EXIT) {
+      print_board(action.board);
+    }
   }
 
   close(client_socket);
