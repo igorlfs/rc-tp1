@@ -76,6 +76,17 @@ void flag_action(Action *action) {
   action->board[row][col] = FLAGGED_CELL;
 }
 
+void remove_flag_action(Action *action) {
+  // Tecnicamente a gente deveria indicar que altera o estado só se ele
+  // realmente for alterado
+  action->type = STATE;
+  int row = action->coordinates[0];
+  int col = action->coordinates[1];
+  if (action->board[row][col] == FLAGGED_CELL) {
+    action->board[row][col] = HIDDEN_CELL;
+  }
+}
+
 int main(int argc, char *argv[]) {
   int port = atoi(argv[ARG_PORT]);
   int protocol = get_protocol(argv[ARG_PROTOCOL_VERSION]);
@@ -86,6 +97,7 @@ int main(int argc, char *argv[]) {
 
   int initial_board[BOARD_SIZE][BOARD_SIZE];
   read_input_file(argv[ARG_INPUT_FILE], initial_board);
+  print_board(initial_board);
 
   int server_socket = socket(protocol, SOCK_STREAM, 0);
   if (server_socket == -1) {
@@ -133,6 +145,13 @@ int main(int argc, char *argv[]) {
       break;
     case FLAG:
       flag_action(&action);
+      break;
+    case REMOVE_FLAG:
+      remove_flag_action(&action);
+      break;
+    case RESET:
+      start_action(&action);
+      action.type = RESET;
       break;
     }
 

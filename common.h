@@ -23,3 +23,5 @@ typedef struct Action {
   int coordinates[2];
   int board[BOARD_SIZE][BOARD_SIZE];
 } Action;
+
+void print_board(int board[BOARD_SIZE][BOARD_SIZE]);

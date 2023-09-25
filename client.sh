@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if ! command -v clang &>/dev/null; then
-	gcc client.c -o client -Wall -g
+	gcc client.c common.c -o client -Wall -g
 else
-	clang client.c -o client -Wall -g
+	clang client.c common.c -o client -Wall -g
 fi

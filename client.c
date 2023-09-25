@@ -14,33 +14,6 @@
 
 #define MAX_CMD_SIZE 100
 
-void print_board(int board[BOARD_SIZE][BOARD_SIZE]) {
-  for (int i = 0; i < BOARD_SIZE; ++i) {
-    for (int j = 0; j < BOARD_SIZE; ++j) {
-      int current = board[i][j];
-      char printable;
-      switch (current) {
-      case -1:
-        printable = '*';
-        break;
-      case -2:
-        printable = '-';
-        break;
-      case -3:
-        printable = '>';
-        break;
-      default:
-        printable = (char)current + '0';
-      }
-      printf("%c", printable);
-      if (j != BOARD_SIZE - 1) {
-        printf("\t\t");
-      }
-    }
-    putchar('\n');
-  }
-}
-
 bool handle_out_of_bounds(int *row, int *col) {
   *row = atoi(strtok(NULL, ","));
   *col = atoi(strtok(NULL, ","));
@@ -114,6 +87,15 @@ int main(int argc, char *argv[]) {
         printf("error: cannot insert flag in revealed cell\n");
         goto reread;
       }
+    } else if (strcmp(command, "remove_flag") == 0) {
+      action.type = REMOVE_FLAG;
+      if (handle_out_of_bounds(&action.coordinates[0],
+                               &action.coordinates[1])) {
+        printf("error: invalid cell\n");
+        goto reread;
+      }
+    } else if (strcmp(command, "reset") == 0) {
+      action.type = RESET;
     }
     if (send(client_socket, &action, sizeof(Action), 0) == -1) {
       exit(EXIT_FAILURE);
