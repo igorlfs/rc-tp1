@@ -85,7 +85,7 @@ void reveal_all(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
 /// Se a célula não é uma bomba, mas todas as células que não são bombas foram
 /// reveladas, o jogo também é encerrado.
 ///
-/// Ao se encerrar o jogo, todas as células são reveladas.
+/// Ao se encerrar o jogo, todas as células são reveladas, incluindo as bombas.
 void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   action->type = STATE;
   int row = action->coordinates[0];
@@ -133,7 +133,7 @@ void remove_flag_action(Action *action) {
 
 int main(int argc, char *argv[]) {
   int port = atoi(argv[ARG_PORT]);
-  char *protocol = argv[ARG_PROTOCOL_VERSION];
+  int protocol = get_protocol(argv[ARG_PROTOCOL_VERSION]);
   int initial_board[BOARD_SIZE][BOARD_SIZE];
 
   // Garante a quantidade de argumentos para o programa funcionar
@@ -144,30 +144,23 @@ int main(int argc, char *argv[]) {
   read_input_file(argv[ARG_INPUT_FILE], initial_board);
   print_board(initial_board);
 
-  int server_socket;
+  // Criando a socket
+  int server_socket = socket(protocol, SOCK_STREAM, 0);
+  if (server_socket == -1) {
+    exit(EXIT_FAILURE);
+  }
   struct sockaddr_storage server_addr;
 
-  if (strcmp("v4", protocol) == 0) {
-    // Criando a socket
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket == -1) {
-      exit(EXIT_FAILURE);
-    }
-
-    // Definindo servidor e porta
+  // Definindo servidor e porta, com base no protocolo
+  if (protocol == AF_INET) {
     struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&server_addr;
+
     ipv4_addr->sin_family = AF_INET;
     ipv4_addr->sin_port = htons(port);
     ipv4_addr->sin_addr.s_addr = INADDR_ANY;
-  } else if (strcmp("v6", protocol) == 0) {
-    // Criando a socket
-    server_socket = socket(AF_INET6, SOCK_STREAM, 0);
-    if (server_socket == -1) {
-      exit(EXIT_FAILURE);
-    }
-
-    // Definindo servidor e porta
+  } else if (protocol == AF_INET6) {
     struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&server_addr;
+
     ipv6_addr->sin6_family = AF_INET6;
     ipv6_addr->sin6_port = htons(port);
     ipv6_addr->sin6_addr = in6addr_any;
@@ -175,20 +168,24 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
+  // Associando socket com o servidor e a porta definidos
   if (bind(server_socket, (struct sockaddr *)&server_addr,
            sizeof(server_addr)) == -1) {
     exit(EXIT_FAILURE);
   }
 
   int client_socket;
+  // TODO(igorlfs): fazer isso aqui poder receber IPv6
   struct sockaddr_in client_addr;
   socklen_t client_addr_len = sizeof(client_addr);
 
 reconnect:
+  // Esperando conexão do cliente
   if (listen(server_socket, MAX_PENDING) == -1) {
     exit(EXIT_FAILURE);
   }
 
+  // Aceitando conexão do cliente
   client_socket =
       accept(server_socket, (struct sockaddr *)&client_addr, &client_addr_len);
   if (client_socket == -1) {
@@ -196,6 +193,7 @@ reconnect:
   }
   printf("client connected\n");
 
+  // Loop principal de jogo
   while (!is_game_over) {
     Action action;
     ssize_t bytes_received = recv(client_socket, &action, sizeof(Action), 0);
