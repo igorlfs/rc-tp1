@@ -17,6 +17,8 @@
 
 #define MAX_PENDING 5
 
+bool is_game_over = false;
+
 void read_input_file(char *file_path, int board[BOARD_SIZE][BOARD_SIZE]) {
   FILE *file_handler = fopen(file_path, "r");
 
@@ -62,18 +64,36 @@ void start_action(Action *action) {
   }
 }
 
+void reveal_all(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
+  for (int i = 0; i < BOARD_SIZE; ++i) {
+    for (int j = 0; j < BOARD_SIZE; ++j) {
+      action->board[i][j] = board[i][j];
+    }
+  }
+}
+
 void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   action->type = STATE;
   int row = action->coordinates[0];
   int col = action->coordinates[1];
   if (board[row][col] == BOMB_CELL) {
-    for (int i = 0; i < BOARD_SIZE; ++i) {
-      for (int j = 0; j < BOARD_SIZE; ++j) {
-        action->board[i][j] = board[i][j];
-      }
-    }
+    is_game_over = true;
+    reveal_all(action, board);
   } else {
     action->board[row][col] = board[row][col];
+    int not_bombs_counter = 0;
+    for (int i = 0; i < BOARD_SIZE; ++i) {
+      for (int j = 0; j < BOARD_SIZE; ++j) {
+        if (action->board[i][j] >= 0) {
+          not_bombs_counter++;
+        }
+      }
+    }
+    if (not_bombs_counter == NOT_BOMBS) {
+      action->type = WIN;
+      is_game_over = false;
+      reveal_all(action, board);
+    }
   }
 }
 

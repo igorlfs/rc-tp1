@@ -14,6 +14,8 @@
 
 #define MAX_CMD_SIZE 100
 
+bool is_game_over = false;
+
 bool handle_out_of_bounds(int *row, int *col) {
   *row = atoi(strtok(NULL, ","));
   *col = atoi(strtok(NULL, ","));
@@ -46,7 +48,7 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  while (true) {
+  while (!is_game_over) {
     Action action;
     char buffer[MAX_CMD_SIZE];
 
@@ -57,6 +59,8 @@ int main(int argc, char *argv[]) {
     char *command = strtok(buffer, " ,");
     if (strcmp(command, "start") == 0) {
       action.type = START;
+      action.coordinates[0] = 0;
+      action.coordinates[1] = 0;
     } else if (strcmp(command, "reveal") == 0) {
       action.type = REVEAL;
       if (handle_out_of_bounds(&action.coordinates[0],
@@ -96,6 +100,7 @@ int main(int argc, char *argv[]) {
       }
     } else if (strcmp(command, "reset") == 0) {
       action.type = RESET;
+      printf("starting new game\n");
     }
     if (send(client_socket, &action, sizeof(Action), 0) == -1) {
       exit(EXIT_FAILURE);
@@ -104,17 +109,15 @@ int main(int argc, char *argv[]) {
     if (bytes_received == -1) {
       exit(EXIT_FAILURE);
     }
-    if (action.board[action.coordinates[0]][action.coordinates[1]] ==
-        BOMB_CELL) {
-      if (action.type != WIN) {
-        printf("GAME OVER!\n");
-      }
+    if (action.type == WIN) {
+      is_game_over = true;
+      printf("YOU WIN!\n");
+    } else if (action.board[action.coordinates[0]][action.coordinates[1]] ==
+               BOMB_CELL) {
+      is_game_over = true;
+      printf("GAME OVER!\n");
     }
     print_board(action.board);
-    if (action.board[action.coordinates[0]][action.coordinates[1]] ==
-        BOMB_CELL) {
-      break;
-    }
   }
 
   close(client_socket);

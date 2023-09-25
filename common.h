@@ -17,6 +17,8 @@ enum ACTION_TYPES {
 #define FLAGGED_CELL (-3)
 
 #define BOARD_SIZE 4
+#define NUM_BOMSS 3
+#define NOT_BOMBS ((BOARD_SIZE) * (BOARD_SIZE) - (NUM_BOMSS))
 
 typedef struct Action {
   int type;
