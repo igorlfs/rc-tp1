@@ -41,6 +41,13 @@ void print_board(int board[BOARD_SIZE][BOARD_SIZE]) {
   }
 }
 
+bool handle_reveal(int *row, int *col) {
+  *row = atoi(strtok(NULL, ","));
+  *col = atoi(strtok(NULL, ","));
+  return row[0] < 0 || row[1] < 0 || row[0] >= BOARD_SIZE ||
+         row[1] >= BOARD_SIZE;
+}
+
 int main(int argc, char *argv[]) {
   int port = atoi(argv[ARG_PORT]);
   char *ip_address = argv[ARG_IP];
@@ -70,12 +77,25 @@ int main(int argc, char *argv[]) {
     Action action;
     char buffer[MAX_CMD_SIZE];
 
+  reread:
     fgets(buffer, MAX_CMD_SIZE, stdin);
     buffer[strcspn(buffer, "\n")] = 0;
 
-    char *command = strtok(buffer, " ");
+    char *command = strtok(buffer, " ,");
     if (strcmp(command, "start") == 0) {
       action.type = START;
+    } else if (strcmp(command, "reveal") == 0) {
+      action.type = REVEAL;
+      if (handle_reveal(&action.coordinates[0], &action.coordinates[1])) {
+        printf("error: invalid cell\n");
+        goto reread;
+      }
+      int row = action.coordinates[0];
+      int col = action.coordinates[1];
+      if (action.board[row][col] != HIDDEN_CELL) {
+        printf("error: cell already revealed\n");
+        goto reread;
+      }
     }
     if (send(client_socket, &action, sizeof(Action), 0) == -1) {
       exit(EXIT_FAILURE);
