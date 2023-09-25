@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+// Espera-se que os argumentos sempre venham nessa ordem :)
 #define ARG_PROTOCOL_VERSION 1
 #define ARG_PORT 2
 #define ARG_INPUT_FILE 4
@@ -19,6 +20,7 @@
 
 bool is_game_over = false;
 
+/// Analisa o arquivo de entrada em `file_path`, armazenando-o em `board`.
 void read_input_file(char *file_path, int board[BOARD_SIZE][BOARD_SIZE]) {
   FILE *file_handler = fopen(file_path, "r");
 
@@ -45,6 +47,8 @@ void read_input_file(char *file_path, int board[BOARD_SIZE][BOARD_SIZE]) {
   fclose(file_handler);
 }
 
+/// Retorna o protocolo com base em `string` ou interrompe o programa
+/// caso a string não seja reconhecida.
 int get_protocol(char *string) {
   if (strcmp(string, "v4") == 0) {
     return AF_INET;
@@ -55,6 +59,7 @@ int get_protocol(char *string) {
   exit(EXIT_FAILURE);
 }
 
+/// Inicia o board de `action` como completamente escondido.
 void start_action(Action *action) {
   action->type = STATE;
   for (int i = 0; i < BOARD_SIZE; ++i) {
@@ -64,6 +69,7 @@ void start_action(Action *action) {
   }
 }
 
+/// Revela todas as células de `action` com base em `board`.
 void reveal_all(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   for (int i = 0; i < BOARD_SIZE; ++i) {
     for (int j = 0; j < BOARD_SIZE; ++j) {
@@ -72,6 +78,14 @@ void reveal_all(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   }
 }
 
+/// Revela a célula nas coordenadas de `action`, com base em `board`.
+///
+/// Se a célula é uma bomba, o jogo é encerrado.
+///
+/// Se a célula não é uma bomba, mas todas as células que não são bombas foram
+/// reveladas, o jogo também é encerrado.
+///
+/// Ao se encerrar o jogo, todas as células são reveladas.
 void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   action->type = STATE;
   int row = action->coordinates[0];
@@ -97,6 +111,7 @@ void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   }
 }
 
+/// Marca a célula nas coordenadas de `action`.
 void flag_action(Action *action) {
   action->type = STATE;
   int row = action->coordinates[0];
@@ -104,9 +119,10 @@ void flag_action(Action *action) {
   action->board[row][col] = FLAGGED_CELL;
 }
 
+/// Remove a marcação da célula nas coordenadas de `action`, se ela existir.
+///
+/// A célula retorna para o estado de escondida.
 void remove_flag_action(Action *action) {
-  // Tecnicamente a gente deveria indicar que altera o estado só se ele
-  // realmente for alterado
   action->type = STATE;
   int row = action->coordinates[0];
   int col = action->coordinates[1];
@@ -117,25 +133,47 @@ void remove_flag_action(Action *action) {
 
 int main(int argc, char *argv[]) {
   int port = atoi(argv[ARG_PORT]);
-  int protocol = get_protocol(argv[ARG_PROTOCOL_VERSION]);
+  char *protocol = argv[ARG_PROTOCOL_VERSION];
+  int initial_board[BOARD_SIZE][BOARD_SIZE];
 
+  // Garante a quantidade de argumentos para o programa funcionar
   if (argc - 1 != ARG_INPUT_FILE) {
     exit(EXIT_FAILURE);
   }
 
-  int initial_board[BOARD_SIZE][BOARD_SIZE];
   read_input_file(argv[ARG_INPUT_FILE], initial_board);
   print_board(initial_board);
 
-  int server_socket = socket(protocol, SOCK_STREAM, 0);
-  if (server_socket == -1) {
+  int server_socket;
+  struct sockaddr_storage server_addr;
+
+  if (strcmp("v4", protocol) == 0) {
+    // Criando a socket
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+      exit(EXIT_FAILURE);
+    }
+
+    // Definindo servidor e porta
+    struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&server_addr;
+    ipv4_addr->sin_family = AF_INET;
+    ipv4_addr->sin_port = htons(port);
+    ipv4_addr->sin_addr.s_addr = INADDR_ANY;
+  } else if (strcmp("v6", protocol) == 0) {
+    // Criando a socket
+    server_socket = socket(AF_INET6, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+      exit(EXIT_FAILURE);
+    }
+
+    // Definindo servidor e porta
+    struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&server_addr;
+    ipv6_addr->sin6_family = AF_INET6;
+    ipv6_addr->sin6_port = htons(port);
+    ipv6_addr->sin6_addr = in6addr_any;
+  } else {
     exit(EXIT_FAILURE);
   }
-
-  struct sockaddr_in server_addr;
-  server_addr.sin_family = protocol;
-  server_addr.sin_port = htons(port);
-  server_addr.sin_addr.s_addr = INADDR_ANY;
 
   if (bind(server_socket, (struct sockaddr *)&server_addr,
            sizeof(server_addr)) == -1) {
@@ -158,7 +196,7 @@ reconnect:
   }
   printf("client connected\n");
 
-  while (true) {
+  while (!is_game_over) {
     Action action;
     ssize_t bytes_received = recv(client_socket, &action, sizeof(Action), 0);
     if (bytes_received == -1) {
