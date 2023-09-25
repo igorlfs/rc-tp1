@@ -31,17 +31,38 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  // TODO(igorlfs) usar IPV6 (AF_INET6) se for o caso
-  int client_socket = socket(AF_INET, SOCK_STREAM, 0);
+  unsigned char buffer[sizeof(struct in6_addr)];
+  int protocol;
+  if (inet_pton(AF_INET, ip_address, buffer) != 0) {
+    protocol = AF_INET;
+  } else if (inet_pton(AF_INET6, ip_address, buffer) != 0) {
+    protocol = AF_INET6;
+  } else {
+    exit(EXIT_FAILURE);
+  }
+
+  int client_socket = socket(protocol, SOCK_STREAM, 0);
   if (client_socket == -1) {
     exit(EXIT_FAILURE);
   }
 
-  struct sockaddr_in server_addr;
-  // TODO(igorlfs) usar IPV6 se for o caso
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(port);
-  server_addr.sin_addr.s_addr = inet_addr(ip_address);
+  struct sockaddr_storage server_addr;
+  // Definindo servidor e porta, com base no protocolo
+  if (protocol == AF_INET) {
+    struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&server_addr;
+
+    ipv4_addr->sin_family = AF_INET;
+    ipv4_addr->sin_port = htons(port);
+    ipv4_addr->sin_addr.s_addr = INADDR_ANY;
+  } else if (protocol == AF_INET6) {
+    struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&server_addr;
+
+    ipv6_addr->sin6_family = AF_INET6;
+    ipv6_addr->sin6_port = htons(port);
+    ipv6_addr->sin6_addr = in6addr_any;
+  } else {
+    exit(EXIT_FAILURE);
+  }
 
   if (connect(client_socket, (struct sockaddr *)&server_addr,
               sizeof(server_addr)) == -1) {
@@ -50,13 +71,13 @@ int main(int argc, char *argv[]) {
 
   while (is_connected) {
     Action action;
-    char buffer[MAX_CMD_SIZE];
+    char line[MAX_CMD_SIZE];
 
   reread:
-    fgets(buffer, MAX_CMD_SIZE, stdin);
-    buffer[strcspn(buffer, "\n")] = 0;
+    fgets(line, MAX_CMD_SIZE, stdin);
+    line[strcspn(line, "\n")] = 0;
 
-    char *command = strtok(buffer, " ,");
+    char *command = strtok(line, " ,");
     if (strcmp(command, "start") == 0) {
       action.type = START;
       action.coordinates[0] = 0;

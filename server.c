@@ -175,8 +175,13 @@ int main(int argc, char *argv[]) {
   }
 
   int client_socket;
-  // TODO(igorlfs): fazer isso aqui poder receber IPv6
-  struct sockaddr_in client_addr;
+  struct sockaddr_storage client_addr_str;
+  void *client_addr;
+  if (protocol == AF_INET) {
+    client_addr = (struct sockaddr_in *)&client_addr_str;
+  } else {
+    client_addr = (struct sockaddr_in6 *)&client_addr_str;
+  }
   socklen_t client_addr_len = sizeof(client_addr);
 
 reconnect:
