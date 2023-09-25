@@ -1,12 +1,10 @@
 all: client server
 
 client: client.c common.c common.h
-	chmod +x client.sh
-	./client.sh
+	clang client.c common.c -o client -Wall -g
 
 server: server.c common.c common.h
-	chmod +x server.sh
-	./server.sh
+	clang server.c common.c -o server -Wall -g
 
 clean:
 	rm client
