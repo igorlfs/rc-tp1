@@ -10,6 +10,7 @@ enum ACTION_TYPES {
   WIN,
   EXIT,
   GAME_OVER,
+  UNKNOWN,
 };
 
 #define BOMB_CELL (-1)

@@ -16,21 +16,121 @@
 
 bool is_connected = true;
 
-bool handle_out_of_bounds(int *row, int *col) {
-  *row = atoi(strtok(NULL, ","));
-  *col = atoi(strtok(NULL, ","));
-  return row[0] < 0 || row[1] < 0 || row[0] >= BOARD_SIZE ||
-         row[1] >= BOARD_SIZE;
+/// Modifica o tipo de ação de `action` com base no comando de `line`.
+void set_action_type(char line[MAX_CMD_SIZE], Action *action) {
+  char *command = strtok(line, " ,");
+  if (strcmp(command, "start") == 0) {
+    action->type = START;
+  } else if (strcmp(command, "reveal") == 0) {
+    action->type = REVEAL;
+  } else if (strcmp(command, "flag") == 0) {
+    action->type = FLAG;
+  } else if (strcmp(command, "remove_flag") == 0) {
+    action->type = REMOVE_FLAG;
+  } else if (strcmp(command, "reset") == 0) {
+    action->type = RESET;
+  } else if (strcmp(command, "exit") == 0) {
+    action->type = EXIT;
+  }
+}
+
+/// Trate os erros de entrada locais.
+bool handle_local_errors(Action *action) {
+  int row;
+  int col;
+
+  if (action->type == UNKNOWN) {
+    printf("error: command not found\n");
+    return true;
+  }
+
+  if (action->type == REVEAL || action->type == FLAG ||
+      action->type == REMOVE_FLAG) {
+    action->coordinates[0] = atoi(strtok(NULL, ","));
+    action->coordinates[1] = atoi(strtok(NULL, ","));
+
+    row = action->coordinates[0];
+    col = action->coordinates[1];
+
+    if (row < 0 || col < 0 || row >= BOARD_SIZE || col >= BOARD_SIZE) {
+      printf("error: invalid cell\n");
+      return true;
+    }
+  }
+
+  if (action->type == REVEAL || action->type == FLAG) {
+    if (action->board[row][col] != HIDDEN_CELL && action->type == REVEAL) {
+      printf("error: cell already revealed\n");
+      return true;
+    }
+    if (action->board[row][col] == FLAGGED_CELL && action->type == FLAG) {
+      printf("error: cell already has a flag\n");
+      return true;
+    }
+    if (action->board[row][col] != HIDDEN_CELL && action->type == FLAG) {
+      printf("error: cannot insert flag in revealed cell\n");
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/// Lê instruções do usuário, faz o tratamento da entrada, envia comandos ao
+/// servidor, e imprime mensagens ou o campo, se necessário (em loop).
+void game_loop(int client_socket) {
+  while (is_connected) {
+    Action action;
+    char line[MAX_CMD_SIZE];
+
+    action.type = UNKNOWN;
+
+    fgets(line, MAX_CMD_SIZE, stdin);
+
+    // Come a quebra de linha que vem com o fgets
+    line[strcspn(line, "\n")] = 0;
+
+    set_action_type(line, &action);
+
+    if (handle_local_errors(&action)) {
+      continue;
+    }
+
+    if (send(client_socket, &action, sizeof(Action), 0) == -1) {
+      exit(EXIT_FAILURE);
+    }
+
+    ssize_t bytes_received = recv(client_socket, &action, sizeof(Action), 0);
+    if (bytes_received == -1) {
+      exit(EXIT_FAILURE);
+    }
+
+    if (action.type == WIN) {
+      is_connected = false;
+      printf("YOU WIN!\n");
+    } else if (action.board[action.coordinates[0]][action.coordinates[1]] ==
+               BOMB_CELL) {
+      is_connected = false;
+      printf("GAME OVER!\n");
+    }
+    if (action.type != EXIT) {
+      print_board(action.board);
+    } else {
+      is_connected = false;
+    }
+  }
 }
 
 int main(int argc, char *argv[]) {
-  int port = atoi(argv[ARG_PORT]);
-  char *ip_address = argv[ARG_IP];
-
+  // Garante a quantidade de argumentos para o programa funcionar
   if (argc - 1 != ARG_PORT) {
     exit(EXIT_FAILURE);
   }
 
+  int port = atoi(argv[ARG_PORT]);
+  char *ip_address = argv[ARG_IP];
+
+  // Define qual protocolo está sendo usado
   unsigned char buffer[sizeof(struct in6_addr)];
   int protocol;
   if (inet_pton(AF_INET, ip_address, buffer) != 0) {
@@ -41,13 +141,14 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
+  // Criando a socket
   int client_socket = socket(protocol, SOCK_STREAM, 0);
   if (client_socket == -1) {
     exit(EXIT_FAILURE);
   }
 
-  struct sockaddr_storage server_addr;
   // Definindo servidor e porta, com base no protocolo
+  struct sockaddr_storage server_addr;
   if (protocol == AF_INET) {
     struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&server_addr;
 
@@ -64,87 +165,13 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
+  // Conectando ao servidor
   if (connect(client_socket, (struct sockaddr *)&server_addr,
               sizeof(server_addr)) == -1) {
     exit(EXIT_FAILURE);
   }
 
-  while (is_connected) {
-    Action action;
-    char line[MAX_CMD_SIZE];
-
-  reread:
-    fgets(line, MAX_CMD_SIZE, stdin);
-    line[strcspn(line, "\n")] = 0;
-
-    char *command = strtok(line, " ,");
-    if (strcmp(command, "start") == 0) {
-      action.type = START;
-      action.coordinates[0] = 0;
-      action.coordinates[1] = 0;
-    } else if (strcmp(command, "reveal") == 0) {
-      action.type = REVEAL;
-      if (handle_out_of_bounds(&action.coordinates[0],
-                               &action.coordinates[1])) {
-        printf("error: invalid cell\n");
-        goto reread;
-      }
-      int row = action.coordinates[0];
-      int col = action.coordinates[1];
-      if (action.board[row][col] != HIDDEN_CELL) {
-        printf("error: cell already revealed\n");
-        goto reread;
-      }
-    } else if (strcmp(command, "flag") == 0) {
-      action.type = FLAG;
-      if (handle_out_of_bounds(&action.coordinates[0],
-                               &action.coordinates[1])) {
-        printf("error: invalid cell\n");
-        goto reread;
-      }
-      int row = action.coordinates[0];
-      int col = action.coordinates[1];
-      if (action.board[row][col] == FLAGGED_CELL) {
-        printf("error: cell already has a flag\n");
-        goto reread;
-      }
-      if (action.board[row][col] != HIDDEN_CELL) {
-        printf("error: cannot insert flag in revealed cell\n");
-        goto reread;
-      }
-    } else if (strcmp(command, "remove_flag") == 0) {
-      action.type = REMOVE_FLAG;
-      if (handle_out_of_bounds(&action.coordinates[0],
-                               &action.coordinates[1])) {
-        printf("error: invalid cell\n");
-        goto reread;
-      }
-    } else if (strcmp(command, "reset") == 0) {
-      action.type = RESET;
-      printf("starting new game\n");
-    } else if (strcmp(command, "exit") == 0) {
-      action.type = EXIT;
-      is_connected = false;
-    }
-    if (send(client_socket, &action, sizeof(Action), 0) == -1) {
-      exit(EXIT_FAILURE);
-    }
-    ssize_t bytes_received = recv(client_socket, &action, sizeof(Action), 0);
-    if (bytes_received == -1) {
-      exit(EXIT_FAILURE);
-    }
-    if (action.type == WIN) {
-      is_connected = false;
-      printf("YOU WIN!\n");
-    } else if (action.board[action.coordinates[0]][action.coordinates[1]] ==
-               BOMB_CELL) {
-      is_connected = false;
-      printf("GAME OVER!\n");
-    }
-    if (action.type != EXIT) {
-      print_board(action.board);
-    }
-  }
+  game_loop(client_socket);
 
   close(client_socket);
 }

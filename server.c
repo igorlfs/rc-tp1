@@ -149,9 +149,9 @@ int main(int argc, char *argv[]) {
   if (server_socket == -1) {
     exit(EXIT_FAILURE);
   }
-  struct sockaddr_storage server_addr;
 
   // Definindo servidor e porta, com base no protocolo
+  struct sockaddr_storage server_addr;
   if (protocol == AF_INET) {
     struct sockaddr_in *ipv4_addr = (struct sockaddr_in *)&server_addr;
 
@@ -175,12 +175,12 @@ int main(int argc, char *argv[]) {
   }
 
   int client_socket;
-  struct sockaddr_storage client_addr_str;
+  struct sockaddr_storage client_address_storage;
   void *client_addr;
   if (protocol == AF_INET) {
-    client_addr = (struct sockaddr_in *)&client_addr_str;
+    client_addr = (struct sockaddr_in *)&client_address_storage;
   } else {
-    client_addr = (struct sockaddr_in6 *)&client_addr_str;
+    client_addr = (struct sockaddr_in6 *)&client_address_storage;
   }
   socklen_t client_addr_len = sizeof(client_addr);
 
@@ -220,6 +220,7 @@ reconnect:
       remove_flag_action(&action);
       break;
     case RESET:
+      printf("starting new game\n");
       start_action(&action);
       break;
     case EXIT:
