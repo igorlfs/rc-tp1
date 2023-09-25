@@ -104,7 +104,17 @@ int main(int argc, char *argv[]) {
     if (bytes_received == -1) {
       exit(EXIT_FAILURE);
     }
+    if (action.board[action.coordinates[0]][action.coordinates[1]] ==
+        BOMB_CELL) {
+      if (action.type != WIN) {
+        printf("GAME OVER!\n");
+      }
+    }
     print_board(action.board);
+    if (action.board[action.coordinates[0]][action.coordinates[1]] ==
+        BOMB_CELL) {
+      break;
+    }
   }
 
   close(client_socket);

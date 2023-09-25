@@ -66,7 +66,15 @@ void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   action->type = STATE;
   int row = action->coordinates[0];
   int col = action->coordinates[1];
-  action->board[row][col] = board[row][col];
+  if (board[row][col] == BOMB_CELL) {
+    for (int i = 0; i < BOARD_SIZE; ++i) {
+      for (int j = 0; j < BOARD_SIZE; ++j) {
+        action->board[i][j] = board[i][j];
+      }
+    }
+  } else {
+    action->board[row][col] = board[row][col];
+  }
 }
 
 void flag_action(Action *action) {
@@ -151,7 +159,6 @@ int main(int argc, char *argv[]) {
       break;
     case RESET:
       start_action(&action);
-      action.type = RESET;
       break;
     }
 
