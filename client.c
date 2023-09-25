@@ -41,7 +41,7 @@ void print_board(int board[BOARD_SIZE][BOARD_SIZE]) {
   }
 }
 
-bool handle_reveal(int *row, int *col) {
+bool handle_out_of_bounds(int *row, int *col) {
   *row = atoi(strtok(NULL, ","));
   *col = atoi(strtok(NULL, ","));
   return row[0] < 0 || row[1] < 0 || row[0] >= BOARD_SIZE ||
@@ -86,7 +86,8 @@ int main(int argc, char *argv[]) {
       action.type = START;
     } else if (strcmp(command, "reveal") == 0) {
       action.type = REVEAL;
-      if (handle_reveal(&action.coordinates[0], &action.coordinates[1])) {
+      if (handle_out_of_bounds(&action.coordinates[0],
+                               &action.coordinates[1])) {
         printf("error: invalid cell\n");
         goto reread;
       }
@@ -94,6 +95,23 @@ int main(int argc, char *argv[]) {
       int col = action.coordinates[1];
       if (action.board[row][col] != HIDDEN_CELL) {
         printf("error: cell already revealed\n");
+        goto reread;
+      }
+    } else if (strcmp(command, "flag") == 0) {
+      action.type = FLAG;
+      if (handle_out_of_bounds(&action.coordinates[0],
+                               &action.coordinates[1])) {
+        printf("error: invalid cell\n");
+        goto reread;
+      }
+      int row = action.coordinates[0];
+      int col = action.coordinates[1];
+      if (action.board[row][col] == FLAGGED_CELL) {
+        printf("error: cell already has a flag\n");
+        goto reread;
+      }
+      if (action.board[row][col] != HIDDEN_CELL) {
+        printf("error: cannot insert flag in revealed cell\n");
         goto reread;
       }
     }

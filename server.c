@@ -69,6 +69,13 @@ void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   action->board[row][col] = board[row][col];
 }
 
+void flag_action(Action *action) {
+  action->type = STATE;
+  int row = action->coordinates[0];
+  int col = action->coordinates[1];
+  action->board[row][col] = FLAGGED_CELL;
+}
+
 int main(int argc, char *argv[]) {
   int port = atoi(argv[ARG_PORT]);
   int protocol = get_protocol(argv[ARG_PROTOCOL_VERSION]);
@@ -123,6 +130,9 @@ int main(int argc, char *argv[]) {
       break;
     case REVEAL:
       reveal_action(&action, initial_board);
+      break;
+    case FLAG:
+      flag_action(&action);
       break;
     }
 

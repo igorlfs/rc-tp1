@@ -14,7 +14,7 @@ enum ACTION_TYPES {
 
 #define BOMB_CELL (-1)
 #define HIDDEN_CELL (-2)
-#define MARKED_CELL (-3)
+#define FLAGGED_CELL (-3)
 
 #define BOARD_SIZE 4
 
