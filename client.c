@@ -105,14 +105,16 @@ void game_loop(int client_socket) {
       exit(EXIT_FAILURE);
     }
 
-    if (action.type == WIN) {
+    if (action.type == WIN || action.type == GAME_OVER) {
       is_connected = false;
-      printf("YOU WIN!\n");
-    } else if (action.board[action.coordinates[0]][action.coordinates[1]] ==
-               BOMB_CELL) {
-      is_connected = false;
-      printf("GAME OVER!\n");
+
+      if (action.type == WIN) {
+        printf("YOU WIN!\n");
+      } else {
+        printf("GAME OVER!\n");
+      }
     }
+
     if (action.type != EXIT) {
       print_board(action.board);
     } else {

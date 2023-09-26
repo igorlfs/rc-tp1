@@ -91,6 +91,7 @@ void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   int row = action->coordinates[0];
   int col = action->coordinates[1];
   if (board[row][col] == BOMB_CELL) {
+    action->type = GAME_OVER;
     is_game_over = true;
     reveal_all(action, board);
   } else {
@@ -105,7 +106,7 @@ void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
     }
     if (not_bombs_counter == NOT_BOMBS) {
       action->type = WIN;
-      is_game_over = false;
+      is_game_over = true;
       reveal_all(action, board);
     }
   }
