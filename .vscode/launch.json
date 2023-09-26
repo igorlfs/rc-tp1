@@ -11,7 +11,7 @@
             ],
             "preLaunchTask": "Make",
             "expressions": "native",
-            "program": "${workspaceFolder}/${fileBasenameNoExtension}"
+            "program": "${workspaceFolder}/bin/${fileBasenameNoExtension}"
         }
     ]
 }

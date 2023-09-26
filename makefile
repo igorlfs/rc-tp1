@@ -1,11 +1,19 @@
-all: client server
+all: init client server
+
+BIN=bin
+CLN=$(BIN)/client
+SRV=$(BIN)/server
+
+init:
+	@ test -d $(BIN) && true || mkdir $(BIN)
 
 client: client.c common.c common.h
-	clang client.c common.c -o client -Wall -g
+	gcc client.c common.c -o $(CLN) -Wall -g
 
 server: server.c common.c common.h
-	clang server.c common.c -o server -Wall -g
+	gcc server.c common.c -o $(SRV) -Wall -g
 
 clean:
-	rm client
-	rm server
+	test ! -d $(BIN) && true || rm -rf $(BIN) 
+
+.PHONY: all init client server clean
