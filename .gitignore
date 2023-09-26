@@ -2,3 +2,6 @@
 client
 server
 compile_commands.json
+docs/*
+!docs/*.tex
+!docs/*.pdf

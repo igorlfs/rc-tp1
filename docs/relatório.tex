@@ -1,0 +1,32 @@
+\documentclass[12pt]{article}
+
+\usepackage{fontspec}           % Pediram para usar Arial 12
+\setmainfont{Arial}
+\usepackage[T1]{fontenc}        % Codificação para português (ao copiar e colar do documento, acentos são colados corretamente)
+\usepackage[portuguese]{babel}  % Português (alguns pacotes usam termos da linguagem, por ex 'Referências')
+
+\author{Igor Lacerda}
+\title{Trabalho Prático I}
+\date{Redes de Computadores}
+
+\begin{document}
+
+\maketitle
+
+O objetivo do trabalho foi aprender sobre a interação servidor-cliente usando sockets, na linguagem C, por meio da implementação de um clone do clássico Campo Minado. Esse objetivo foi atingido com sucesso.\footnote{A formatação desse trabalho não está tão elegante quanto deveria estar, porque eu não tenho as variantes (itálico, negrito) da fonte \textit{Arial} no meu computador. Para uma versão um pouco mais bonita, considere trocar a fonte para o padrão do \LaTeX\ ou recompilar o documento se tiver as fontes.}
+
+\section*{Desafios, Dificuldades e Imprevistos}
+
+A maior dificuldade, foi, indiscutivelmente, começar. Como alguém que não presta atenção nas aulas, eu não sabia quais funções deveria usar para realizar a conexão e afins. Felizmente existe uma quantidade abundante de recursos sobre esse tema na \textit{internet}. Agora é completamente natural para mim, realizar uma conexão criando uma \textit{socket}, definindo os parâmetros (protocolo, endereço, porta), fazendo a atribuição dos parâmetros para a \textit{socket} e assim por diante. A princípio pode parecer um processo desnecessariamente complicado, mas ao final, é compreensível ser do jeito que é.
+
+Outra dificuldade foi o uso do C, que é uma linguagem \emph{intankável}, em que toda e qualquer coisa é mais complicada do que deveria ser (isso é sabido; é exatamente esse o motivo pelo qual pedem para que a gente faça em C). Eu muito preferiria ter feito esse trabalho em Rust. Mas até que não foram tantos impedimentos nesse projeto especificamente: alguns \textit{segfaults} aqui e ali, uma saudade eterna de um tipo \textit{string}...
+
+Outra complicação que, ao meu ver, pareceu desnecessária, foi o suporte a tanto IPv4 como IPv6, que exigiu certa engenhosidade para lidar com os tipos \texttt{sockaddr\_in} e \texttt{sockaddr\_in6}, bem como o uso da função \texttt{inet\_pton} no cliente, para saber a versão do protocolo. Não achei minhas soluções particularmente elegantes no que diz respeito a isso.
+
+Certamente os maiores aborrecimentos durante o projeto foram: o sistema operacional demorando para liberar a porta e eu esquecendo de reiniciar o servidor quando estava testando o cliente. Isso acabou atrasando um pouco as coisas (em parte porque é bem fácil eu ficar distraído) e introduziu certa confusão, porque às vezes parecia que os programas tinham parado de funcionar (e às vezes realmente tinham).
+
+Em relação ao desenvolvimento (a lógica) do jogo em si, não houve grandes dificuldades, como é de se esperar. Mas alguma quebra de cabeça foi necessária para resolver alguns \textit{bugs} chatinhos (nenhum caso particular que mereça um comentário). No aspecto de engenharia de \textit{software}, inicialmente os programas consistiam apenas na função principal, mas tentei extrair alguns blocos em funções e no geral deixar as coisas menos bagunçadas, mas não foi um esforço tão exaustivo.
+
+Tendo concluído o trabalho, diria que ele não foi muito difícil, apesar de ser mais complicado do que deveria. Achei bacana ver como o conteúdo de redes é usado na prática e o tema escolhido, com um joguinho, é uma ótima ideia.
+
+\end{document}
