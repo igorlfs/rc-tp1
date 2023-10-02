@@ -133,11 +133,12 @@ int main(int argc, char *argv[]) {
   char *ip_address = argv[ARG_IP];
 
   // Define qual protocolo está sendo usado
-  unsigned char buffer[sizeof(struct in6_addr)];
-  int protocol;
-  if (inet_pton(AF_INET, ip_address, buffer) != 0) {
+  struct in_addr inaddr4;
+  struct in6_addr inaddr6;
+  int protocol = AF_INET;
+  if (inet_pton(AF_INET, ip_address, &inaddr4) != 0) {
     protocol = AF_INET;
-  } else if (inet_pton(AF_INET6, ip_address, buffer) != 0) {
+  } else if (inet_pton(AF_INET6, ip_address, &inaddr6) != 0) {
     protocol = AF_INET6;
   } else {
     exit(EXIT_FAILURE);
@@ -156,13 +157,13 @@ int main(int argc, char *argv[]) {
 
     ipv4_addr->sin_family = AF_INET;
     ipv4_addr->sin_port = htons(port);
-    ipv4_addr->sin_addr.s_addr = INADDR_ANY;
+    ipv4_addr->sin_addr = inaddr4;
   } else if (protocol == AF_INET6) {
     struct sockaddr_in6 *ipv6_addr = (struct sockaddr_in6 *)&server_addr;
 
     ipv6_addr->sin6_family = AF_INET6;
     ipv6_addr->sin6_port = htons(port);
-    ipv6_addr->sin6_addr = in6addr_any;
+    ipv6_addr->sin6_addr = inaddr6;
   } else {
     exit(EXIT_FAILURE);
   }
