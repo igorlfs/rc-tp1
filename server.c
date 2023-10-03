@@ -200,7 +200,7 @@ reconnect:
   printf("client connected\n");
 
   // Loop principal de jogo
-  while (!is_game_over) {
+  while (true) {
     Action action;
     ssize_t bytes_received = recv(client_socket, &action, sizeof(Action), 0);
     if (bytes_received == -1) {
@@ -232,8 +232,14 @@ reconnect:
       exit(EXIT_FAILURE);
     }
 
-    if (action.type == EXIT) {
+    // Se o jogo foi vencido (WIN) ou perdido (GAME_OVER) desconecte do cliente
+    // E fique esperando por novas conexões
+    // Tanto WIN como GAME_OVER são controlados pela variável is_game_over
+    if (action.type == EXIT || is_game_over) {
       close(client_socket);
+      // Lembre de resetar o estado da variável is_game_over,
+      // para conexões subsequentes não desconectarem instantaneamente
+      is_game_over = false;
       goto reconnect;
     }
   }
