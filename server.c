@@ -18,8 +18,6 @@
 
 #define MAX_PENDING 5
 
-bool is_game_over = false;
-
 /// Analisa o arquivo de entrada em `file_path`, armazenando-o em `board`.
 void read_input_file(char *file_path, int board[BOARD_SIZE][BOARD_SIZE]) {
   FILE *file_handler = fopen(file_path, "r");
@@ -92,7 +90,6 @@ void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
   int col = action->coordinates[1];
   if (board[row][col] == BOMB_CELL) {
     action->type = GAME_OVER;
-    is_game_over = true;
     reveal_all(action, board);
   } else {
     action->board[row][col] = board[row][col];
@@ -106,7 +103,6 @@ void reveal_action(Action *action, int board[BOARD_SIZE][BOARD_SIZE]) {
     }
     if (not_bombs_counter == NOT_BOMBS) {
       action->type = WIN;
-      is_game_over = true;
       reveal_all(action, board);
     }
   }
@@ -232,14 +228,8 @@ reconnect:
       exit(EXIT_FAILURE);
     }
 
-    // Se o jogo foi vencido (WIN) ou perdido (GAME_OVER) desconecte do cliente
-    // E fique esperando por novas conexões
-    // Tanto WIN como GAME_OVER são controlados pela variável is_game_over
-    if (action.type == EXIT || is_game_over) {
+    if (action.type == EXIT) {
       close(client_socket);
-      // Lembre de resetar o estado da variável is_game_over,
-      // para conexões subsequentes não desconectarem instantaneamente
-      is_game_over = false;
       goto reconnect;
     }
   }
