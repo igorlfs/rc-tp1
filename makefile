@@ -3,6 +3,9 @@ all: init client server
 BIN=bin
 CLN=$(BIN)/client
 SRV=$(BIN)/server
+PORT=51511
+INPUT_FILE=input/jogo1.csv
+IP=127.0.0.1
 
 init:
 	@ test -d $(BIN) && true || mkdir $(BIN)
@@ -16,4 +19,10 @@ server: server.c common.c common.h
 clean:
 	test ! -d $(BIN) && true || rm -rf $(BIN) 
 
-.PHONY: all init client server clean
+run_server: init server
+	./$(SRV) v4 $(PORT) -i $(INPUT_FILE)
+
+run_client: init client
+	./$(CLN) $(IP) $(PORT)
+
+.PHONY: all init client server clean run_server run_client
